@@ -1,0 +1,1 @@
+export { ResourceDetailComponent } from './ResourceDetailComponent';
