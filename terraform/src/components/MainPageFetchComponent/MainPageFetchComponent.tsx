@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, TableColumn, Progress, ResponseErrorPanel, Link, StructuredMetadataTable, InfoCard } from '@backstage/core-components';
 import { useApi, configApiRef } from '@backstage/core-plugin-api';
@@ -9,7 +9,6 @@ import fetch from 'node-fetch';
 import { ResponseError } from '@backstage/errors';
 
 export const OutputTable = ({ outputs }:any) => {
-
   let data:any = {};
   for(let i in outputs) {
     data[Number(i)+1] = outputs[i].value;
@@ -26,67 +25,24 @@ export const OutputTable = ({ outputs }:any) => {
   );
 }
 
-export const ResourceTable = ({ resources }:any) => {
+export const ResourceTable = ({ resources }:any, { resourceDetails }:any) => {
   const navigate = useNavigate();
-  let resourcesObj:any = {};
-  let nameIndex:any = {};
-
-  let data:any[] = resources.filter((resource:any)=> {
-    if(resource.mode === "managed") {
-      return true;
-    } else {
-      return false;
-    }
-  }).map((resource:any)=> {
-    let resourceName:string = "";
-    if(resource.module) {
-      resourceName += resource.module.split("[")[0] + ".";
-    } else {
-      resourceName += resource.mode + "."
-    }
-    resourceName += resource.type + "." + resource.name;
-    resourcesObj[resourceName] = resource;
-    let displayName = resourceName;
-    if(resource.instances[0].attributes.name) {
-      displayName = resource.instances[0].attributes.name;
-    } else if(resource.instances[0].attributes.id) {
-      displayName = resource.instances[0].attributes.id;
-    }
-    nameIndex[resourceName] = displayName;
-    return {
-      name: resourceName,
-      displayName: displayName,
-      type: resource.type,
-    }
-  });
-
-  for(let i in resourcesObj) {
-    let newDependenciesObj:string[] = [];
-    if(resourcesObj[i].instances[0].dependencies) {
-      for(let j in resourcesObj[i].instances[0].dependencies) {
-        if(nameIndex[resourcesObj[i].instances[0].dependencies[j]]) {
-          newDependenciesObj.push(nameIndex[resourcesObj[i].instances[0].dependencies[j]]);
-        }
-      }
-      resourcesObj[i].instances[0].dependencies = newDependenciesObj;
-    }
-  }
 
   const columns: TableColumn[] = [
     { title: 'Name', 
       render: (row: any) => {
-        let resourceDetails = {
+        let resourceDetailsObj = {
           name: row.name,
           displayName: row.displayName,
-          details: resourcesObj[row.name]
+          details: resourceDetails[row.name]
         };
         return (
           <>
             <Link
               to="/terraform/resourcedetails"
-              onClick={(e) => {
+              onClick={(e:any) => {
                 e.preventDefault();
-                navigate("/terraform/resourcedetails", { state: resourceDetails });
+                navigate("/terraform/resourcedetails", { state: resourceDetailsObj });
               }}
             >{row.displayName}</Link>
           </>
@@ -102,21 +58,21 @@ export const ResourceTable = ({ resources }:any) => {
         title="Resources"
         options={{ search: true, paging: true }}
         columns={columns}
-        data={data ? data : []}
+        data={resources}
       />
     </>
   );
 };
 
-export const TerraformTables = ({ returnObj }: any) => {
+export const TerraformTables = ({ resources }: any, { resourceDetails }:any, { outputs }: any) => {
   return (
     <>
       <Grid container spacing={3} direction="column">
         <Grid item>
-          <OutputTable outputs={returnObj.outputs || []}/>
+          <OutputTable outputs={outputs}/>
         </Grid>
         <Grid item>
-          <ResourceTable resources={returnObj.resources || []}/>
+          <ResourceTable resources={resources} resourceDetails={resourceDetails}/>
         </Grid>
       </Grid>
     </>
@@ -125,15 +81,65 @@ export const TerraformTables = ({ returnObj }: any) => {
 
 export const MainPageFetchComponent = () => {
   const config = useApi(configApiRef);
-  
-  const { value, loading, error } = useAsync(async (): Promise<any> => {
-    
-    console.log(config);
-    const backendUrl = config.getString('backend.baseUrl');
-    
-    let Bucket = config.getConfig('terraform').getString('bucket');
-    let Prefix = config.getConfig('terraform').getString('prefix');
+  const backendUrl = config.getString('backend.baseUrl');
+  let Bucket = config.getConfig('terraform').getString('bucket');
+  let Prefix = config.getConfig('terraform').getString('prefix');
 
+  const [resources, setResources] = useState([]);
+  const [outputs, setOutputs] = useState([]);
+  const [resourceDetails,setResourceDetails] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  function parseResources(resourcesArr) {
+    let resourcesObj:any = {};
+    let nameIndex:any = {};
+    let data:any[] = resourcesArr.filter((resource:any)=> {
+      if(resource.mode === "managed") {
+        return true;
+      } else {
+        return false;
+      }
+    }).map((resource:any)=> {
+      let resourceName:string = "";
+      if(resource.module) {
+        resourceName += resource.module.split("[")[0] + ".";
+      } else {
+        resourceName += resource.mode + "."
+      }
+      resourceName += resource.type + "." + resource.name;
+      resourcesObj[resourceName] = resource;
+      let displayName = resourceName;
+      if(resource.instances[0].attributes.name) {
+        displayName = resource.instances[0].attributes.name;
+      } else if(resource.instances[0].attributes.id) {
+        displayName = resource.instances[0].attributes.id;
+      }
+      nameIndex[resourceName] = displayName;
+      return {
+        name: resourceName,
+        displayName: displayName,
+        type: resource.type,
+      }
+    });
+  
+    for(let i in resourcesObj) {
+      let newDependenciesObj:string[] = [];
+      if(resourcesObj[i].instances[0].dependencies) {
+        for(let j in resourcesObj[i].instances[0].dependencies) {
+          if(nameIndex[resourcesObj[i].instances[0].dependencies[j]]) {
+            newDependenciesObj.push(nameIndex[resourcesObj[i].instances[0].dependencies[j]]);
+          }
+        }
+        resourcesObj[i].instances[0].dependencies = newDependenciesObj;
+      }
+    }
+
+    setResources(data);
+    setResourceDetails(resourcesObj);
+  }
+
+  useEffect(async () => {
     const requestBody = {
       Bucket,
       Prefix
@@ -144,9 +150,11 @@ export const MainPageFetchComponent = () => {
       body: JSON.stringify(requestBody),
       headers: {'Content-Type': 'application/json'}
     });
+
     if (!response.ok) {
       throw await ResponseError.fromResponse(response);
     }
+
     let responseJSON = await response.json();
     let resourcesArr:any[] = [];
     let outputsArr:any[] = [];
@@ -176,14 +184,11 @@ export const MainPageFetchComponent = () => {
       }
     }
 
-    console.log(outputsArr);
-    console.log(resourcesArr);
-
-    return {
-      "outputs": outputsArr,
-      "resources": resourcesArr,
-    };
-  }, []);
+    parseResources(resourcesArr);
+    setOutputs(outputsArr);
+    setLoading(false);
+    
+  },[]);
 
   if (loading) {
     return <Progress />;
@@ -191,5 +196,5 @@ export const MainPageFetchComponent = () => {
     return <ResponseErrorPanel error={error} />;
   }
 
-  return <TerraformTables returnObj={value || {}} />;
+  return <TerraformTables resources={resources} resourceDetails={resourceDetails} outputs={outputs} />;
 };
