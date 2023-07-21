@@ -1,12 +1,11 @@
 import { createPlugin, createRoutableExtension } from '@backstage/core-plugin-api';
 
-import { rootRouteRef, resourceDetailsRouteRef } from './routes';
+import { rootRouteRef } from './routes';
 
 export const terraformPlugin = createPlugin({
   id: 'terraformPlugin',
   routes: {
     root: rootRouteRef,
-    resourceDetails: resourceDetailsRouteRef,
   },
 });
 

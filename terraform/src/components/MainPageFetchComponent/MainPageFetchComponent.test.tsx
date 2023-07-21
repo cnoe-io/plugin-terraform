@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { screen,expect } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { OutputTable, ResourceTable } from './MainPageFetchComponent';
 import {
   renderInTestApp,
