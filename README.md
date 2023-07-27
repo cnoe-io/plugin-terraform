@@ -97,6 +97,6 @@ For more account configuration examples, see the [Backstage integration-aws-node
 
 The Terraform backend plugin requires the AWS identity that it uses to have the following IAM permissions for getting tfstate files from S3:
 
-s3:GetObject
-s3:ListObjectsV2
+* s3:GetObject
+* s3:ListObjectsV2
 
