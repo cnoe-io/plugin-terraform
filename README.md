@@ -69,7 +69,7 @@ Create a new file at `packages/backend/src/plugins/terraform.ts` with the follow
 ```typescript
 import { Router } from 'express';
 import { PluginEnvironment } from '../types';
-import { createRouter } from '@internal/plugin-terraform-backend';
+import { createRouter } from '@cnoe-io/plugin-terraform-backend';
 
 export default async function createPlugin(
   env: PluginEnvironment,
