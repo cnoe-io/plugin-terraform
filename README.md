@@ -7,7 +7,7 @@ Welcome to the Terraform plugin!
 ### Terraform State Files
 This plugin supports two storage locations for Terraform state files (tfstate): S3 and local file systems. S3 will require additional configuration for AWS credentials to access S3. To access local file systems, the terraform backend will need proper file permissions to access those files.
 
-### Configuration
+### Configuration - Frontend
 
 Entities must be annotated with Kubernetes annotations. An example component
 would look like the following where you can configure the `spec` to your
@@ -33,7 +33,7 @@ spec:
 Update your Entity page. For example: 
 ```typescript
 // in packages/app/src/components/catalog/EntityPage.tsx
-import { TerraformPluginPage } from '@internal/plugin-terraform';
+import { TerraformPluginPage } from '@cnoe-io/plugin-terraform';
 ...
 const terraFormContent = (
   <TerraformPluginPage />
@@ -61,6 +61,43 @@ As shown in the example above, the following annotations could go under
 - `terraform/s3-prefix`: Optional. This is a S3 prefix of where tfstate files would be stored in the S3 bucket.
 
 Note: The plugin only supports using one storage location at a time. If you define an S3 storage location and a local file system, the plugin will only use the S3 storage location.
+
+### Configuration - Backend
+
+Create a new file at `packages/backend/src/plugins/terraform.ts` with the following contents.
+
+```typescript
+import { Router } from 'express';
+import { PluginEnvironment } from '../types';
+import { createRouter } from '@internal/plugin-terraform-backend';
+
+export default async function createPlugin(
+  env: PluginEnvironment,
+): Promise<Router> {
+  return await createRouter({
+    logger: env.logger,
+    config: env.config,
+  });
+}
+
+```
+
+In `packages/backend/src/index.ts`, import the function created above and create an endpoint for the backend.
+
+```typescript
+import ...
+import terraform from './plugins/terraform';
+
+...
+const appEnv = useHotMemoize(module, () => createEnv('app'));
+const terraformEnv = useHotMemoize(module, () => createEnv('terraform'));
+...
+apiRouter.use('/search', await search(searchEnv));
+apiRouter.use('/terraform', await terraform(terraformEnv));
+...
+```
+
+
 
 ### Authentication
 
