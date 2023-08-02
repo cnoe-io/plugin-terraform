@@ -1,11 +1,11 @@
 import React, { useState, useEffect, Dispatch, SetStateAction } from 'react';
-import { 
-  Table, 
-  TableColumn, 
-  Progress, 
-  ResponseErrorPanel, 
-  Link, 
-  StructuredMetadataTable, 
+import {
+  Table,
+  TableColumn,
+  Progress,
+  ResponseErrorPanel,
+  Link,
+  StructuredMetadataTable,
   InfoCard,
   DependencyGraph,
   DependencyGraphTypes,
@@ -37,7 +37,7 @@ export const OutputTable = ({ outputs }:any) => {
 
 export const ResourceTable = ({ resources,setResourceDetail }:{resources:any, setResourceDetail:Dispatch<SetStateAction<any>>}) => {
   const columns: TableColumn[] = [
-    { title: 'Name', 
+    { title: 'Name',
       render: (row: any) => {
         const resourceDetailsObj = {
           name: row.name,
@@ -49,7 +49,6 @@ export const ResourceTable = ({ resources,setResourceDetail }:{resources:any, se
               to="/terraform/resourcedetails"
               onClick={(e:any) => {
                 e.preventDefault();
-                console.log(resourceDetailsObj);
                 setResourceDetail(resourceDetailsObj);
               }}
             >{row.displayName}</Link>
@@ -102,7 +101,7 @@ export const ResourceDetailComponent = ({resourceDetail,allResources,setResource
     for(let i in resourceObj) {
       if(!Array.isArray(resourceObj[i])) {
         newDetails[i] = resourceObj[i];
-      } 
+      }
     }
     setDetails(newDetails);
 
@@ -161,7 +160,7 @@ export const ResourceDetailComponent = ({resourceDetail,allResources,setResource
               return (
                 <g>
                   <rect width={width} height={height} rx={20} fill='#36baa2'/>
-                  <text 
+                  <text
                     y={height/2}
                     x={width/2}
                     alignmentBaseline="middle"
@@ -172,7 +171,6 @@ export const ResourceDetailComponent = ({resourceDetail,allResources,setResource
                       to="/terraform/resourcedetails"
                       onClick={(e) => {
                         e.preventDefault();
-                        console.log(resourceDetailsObj);
                         setResourceDetail(resourceDetailsObj);
                       }}
                   >{props.node.id}</Link>
@@ -230,7 +228,7 @@ export const MainPageFetchComponent = () => {
         type: resource.type,
       }
     });
-  
+
     for(let i in resourcesObj) {
       let newDependenciesObj:any[] = [];
       if(resourcesObj[i].instances[0].dependencies) {
@@ -246,7 +244,7 @@ export const MainPageFetchComponent = () => {
     setResources(data);
     setAllResources(resourcesObj);
   }
-  
+
   useEffect(() => {
     const getStateFiles = async() => {
       let resourcesArr:any[] = [];

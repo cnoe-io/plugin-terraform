@@ -1,5 +1,4 @@
 import * as fs from 'fs';
-import * as path from 'path';
 import { errorHandler } from '@backstage/backend-common';
 import express from 'express';
 import Router from 'express-promise-router';
@@ -23,7 +22,6 @@ export async function createRouter(
   options: RouterOptions,
 ): Promise<express.Router> {
   const { logger, config } = options;
-  console.log(config);
   const awsCredentialsManager = DefaultAwsCredentialsManager.fromConfig(config);
   const credProvider = await awsCredentialsManager.getCredentialProvider({});
   const client = new S3Client({
@@ -52,7 +50,7 @@ export async function createRouter(
       const command = new ListObjectsV2Command(input);
       const commandResponse = await client.send(command);
       responseObject = responseObject.concat(commandResponse.Contents);
-      logger.info(JSON.stringify(commandResponse));
+      logger.debug(JSON.stringify(commandResponse));
       token = commandResponse.NextContinuationToken;
     }
     res.json(responseObject);
@@ -76,7 +74,7 @@ export async function createRouter(
         });
       }
     } catch(e) {
-      console.log(e);
+      logger.error(e)
     }
 
     res.json(responseObject);
@@ -97,9 +95,9 @@ export async function createRouter(
         const data = fs.readFileSync(req.body.Key, { encoding: 'utf8', flag: 'r' });
         jsonData = JSON.parse(data);
       } catch(e) {
-        console.log(e);
+        logger.error(e);
       }
-  
+
       res.json(jsonData);
     }
   });
