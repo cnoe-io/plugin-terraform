@@ -1,1 +1,1 @@
-export { terraformPlugin, TerraformPluginPage } from './plugin';
+export {terraformPlugin, TerraformPluginPage} from './plugin';

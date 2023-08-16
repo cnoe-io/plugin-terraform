@@ -1,5 +1,4 @@
-import React from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import React, {Dispatch, SetStateAction} from 'react';
 import { screen } from '@testing-library/react';
 import { OutputTable, ResourceTable } from './MainPageFetchComponent';
 import {
@@ -61,8 +60,9 @@ describe('MainPageFetchComponent', () => {
     }
   ];
 
+    const noop: Dispatch<SetStateAction<any>> = () => {};
     renderInTestApp(
-      <ResourceTable resources={fakeResources}/>
+      <ResourceTable resources={fakeResources} setResourceDetail={noop}/>
     );
 
     // Wait for the table to render
