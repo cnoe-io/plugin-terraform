@@ -33,7 +33,7 @@ spec:
 Update your Entity page. For example: 
 ```typescript
 // in packages/app/src/components/catalog/EntityPage.tsx
-import { TerraformPluginPage } from '@cnoe-io/plugin-terraform';
+import { isTerraformAvailable, TerraformPluginPage } from '@cnoe-io/plugin-terraform';
 ...
 const terraFormContent = (
   <TerraformPluginPage />
@@ -42,11 +42,11 @@ const terraFormContent = (
 const websiteEntityPage = (
   <EntityLayout>
   ...
-    <EntityLayout.Route path="/terraform" title="Terraform">
+    <EntityLayout.Route path="/terraform" title="Terraform" if={isTerraformAvailable}>
       {terraFormContent}
     </EntityLayout.Route>
   </EntityLayout>
-...  
+...
 );
 ```
 
