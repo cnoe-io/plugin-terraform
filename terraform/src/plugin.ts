@@ -1,15 +1,19 @@
 import {createPlugin, createRoutableExtension} from '@backstage/core-plugin-api';
 
 import {rootRouteRef} from './routes';
+import {
+  TERRAFORM_S3_BUCKET,
+  TERRAFORM_S3_PREFIX,
+  TERRAFORM_LOCAL_PATH,
+} from './consts';
 
 import {Entity} from '@backstage/catalog-model';
 
 export const isTerraformAvailable = (entity: Entity) =>
-  Boolean(entity.metadata.annotations?.['terraform/s3-bucket']) &&
-  (
-    Boolean(entity.metadata.annotations?.['terraform/s3-prefix']) ||
-    Boolean(entity.metadata.annotations?.['terraform/local-filepath'])
-  );
+((Boolean(entity.metadata.annotations?.[TERRAFORM_S3_BUCKET]) &&
+  Boolean(entity.metadata.annotations?.[TERRAFORM_S3_PREFIX])) ||
+  Boolean(entity.metadata.annotations?.[TERRAFORM_LOCAL_PATH])
+);
 
 export const terraformPlugin = createPlugin({
   id: 'terraformPlugin',

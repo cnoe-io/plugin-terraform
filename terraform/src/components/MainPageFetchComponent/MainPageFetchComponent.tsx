@@ -17,6 +17,11 @@ import Drawer from '@material-ui/core/Drawer';
 
 import fetch from 'node-fetch';
 import { ResponseError } from '@backstage/errors';
+import {
+  TERRAFORM_S3_BUCKET,
+  TERRAFORM_S3_PREFIX,
+  TERRAFORM_LOCAL_PATH,
+} from '../../consts'
 
 export const OutputTable = ({ outputs }:any) => {
   let data:any = {};
@@ -332,16 +337,16 @@ export const MainPageFetchComponent = () => {
     let Prefix = "";
     let FileLocation = "";
 
-    if(entity.metadata.annotations?.['terraform/s3-bucket']) {
-      Bucket = entity.metadata.annotations?.['terraform/s3-bucket'] || "";
+    if(entity.metadata.annotations?.[TERRAFORM_S3_BUCKET]) {
+      Bucket = entity.metadata.annotations?.[TERRAFORM_S3_BUCKET] || "";
     }
 
-    if(entity.metadata.annotations?.['terraform/s3-prefix']) {
-      Prefix = entity.metadata.annotations?.['terraform/s3-bucket'] || "";
+    if(entity.metadata.annotations?.[TERRAFORM_S3_PREFIX]) {
+      Prefix = entity.metadata.annotations?.[TERRAFORM_S3_PREFIX] || "";
     }
 
     if(!Bucket) {
-      FileLocation = entity.metadata.annotations?.['terraform/local-filepath'] || "";
+      FileLocation = entity.metadata.annotations?.[TERRAFORM_LOCAL_PATH] || "";
     }
 
     getStateFiles();

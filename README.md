@@ -20,9 +20,9 @@ kind: Component
 metadata:
   name: backstage
   annotations:
-    terraform/s3-bucket: backstage-terraform-plugin
-    terraform/s3-prefix: tfstates/
-    terraform/local-filepath: /var/lib/tfstatefiles
+    terraform.cnoe.io/s3-bucket: backstage-terraform-plugin
+    terraform.cnoe.io/s3-prefix: tfstates/
+    terraform.cnoe.io/local-filepath: /var/lib/tfstatefiles
 spec:
   type: service
   lifecycle: experimental
@@ -55,10 +55,10 @@ As shown in the example above, the following annotations could go under
 `annotations` in the backstage `Component` and will be recognized by this plugin.
 
 - One of the two annotations below are required:
-- `terraform/s3-bucket`: Required. The S3 bucket where tfstate files would be stored.
-- `terraform/local-filepath`: Required. The local file system path of where tfstate files would be stored.
+- `terraform.cnoe.io/s3-bucket`: Required. The S3 bucket where tfstate files would be stored.
+- `terraform.cnoe.io/local-filepath`: Required. The local file system path of where tfstate files would be stored.
 - If storing tfstate files in S3, you can optionally define a prefix:
-- `terraform/s3-prefix`: Optional. This is a S3 prefix of where tfstate files would be stored in the S3 bucket.
+- `terraform.cnoe.io/s3-prefix`: Optional. This is a S3 prefix of where tfstate files would be stored in the S3 bucket.
 
 Note: The plugin only supports using one storage location at a time. If you define an S3 storage location and a local file system, the plugin will only use the S3 storage location.
 
