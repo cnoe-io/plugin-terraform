@@ -137,3 +137,6 @@ The Terraform backend plugin requires the AWS identity that it uses to have the 
 * s3:GetObject
 * s3:ListObjectsV2
 
+## Diagram
+
+![details](images/terraform.png)
