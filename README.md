@@ -5,7 +5,7 @@ Welcome to the Terraform plugin!
 ## Getting started
 
 ### Terraform State Files
-This plugin supports two storage locations for Terraform state files (tfstate): S3 and local file systems. S3 will require additional configuration for AWS credentials to access S3. To access local file systems, the terraform backend will need proper file permissions to access those files.
+This plugin supports three storage locations for Terraform state files (tfstate): K8s secrets, S3 and local file systems. S3 will require additional configuration for AWS credentials to access S3. To access local file systems, the terraform backend will need proper file permissions to access those files.
 
 ### Configuration - Frontend
 
@@ -54,7 +54,7 @@ const websiteEntityPage = (
 );
 ```
 
-If you want to have the Terraform Outputs/Resource tables on the overview Entity page:
+If you want to have the Terraform outputs/resources tables on the overview Entity page:
 ```typescript
 // in packages/app/src/components/catalog/EntityPage.tsx
 const overviewContent = (
