@@ -1,6 +1,6 @@
 # Terraform Backstage Plugin
 
-Welcome to the Terraform plugin!
+Welcome to the Terraform plugin! This plugin can show Terraform outputs/resources from TFState files associated with a particular Backstage components. It does this by utilizing various annotations which point to where the TFState might be stored. It will then fetch those files, parse them, and display them in a Backstage component. 
 
 ## Getting started
 
