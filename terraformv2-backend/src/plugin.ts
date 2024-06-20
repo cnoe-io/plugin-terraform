@@ -29,25 +29,25 @@ export const terraformv2Plugin = createBackendPlugin({
         });
 
         // Uncomment these Auth Policies if you are utilizing Guest access for local development.
-        httpRouter.addAuthPolicy({
-          path: '/deflate',
-          allow: 'unauthenticated',
-        });
+        // httpRouter.addAuthPolicy({
+        //   path: '/deflate',
+        //   allow: 'unauthenticated',
+        // });
 
-        httpRouter.addAuthPolicy({
-          path: '/getFileList',
-          allow: 'unauthenticated',
-        });
+        // httpRouter.addAuthPolicy({
+        //   path: '/getFileList',
+        //   allow: 'unauthenticated',
+        // });
 
-        httpRouter.addAuthPolicy({
-          path: '/getLocalFileList',
-          allow: 'unauthenticated',
-        });
+        // httpRouter.addAuthPolicy({
+        //   path: '/getLocalFileList',
+        //   allow: 'unauthenticated',
+        // });
 
-        httpRouter.addAuthPolicy({
-          path: '/getTFStateFile',
-          allow: 'unauthenticated',
-        });
+        // httpRouter.addAuthPolicy({
+        //   path: '/getTFStateFile',
+        //   allow: 'unauthenticated',
+        // });
 
         httpRouter.use(await createRouter({
           config,
