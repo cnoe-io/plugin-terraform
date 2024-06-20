@@ -1,25 +1,42 @@
-import {createPlugin, createRoutableExtension} from '@backstage/core-plugin-api';
+import { createPlugin, createRoutableExtension, createApiFactory, } from '@backstage/core-plugin-api';
 
-import {rootRouteRef} from './routes';
+import { rootRouteRef } from './routes';
+import {Terraform, TerraformApiRef} from "./api";
+import {kubernetesApiRef} from "@backstage/plugin-kubernetes";
+
 import {
   TERRAFORM_S3_BUCKET,
   TERRAFORM_S3_PREFIX,
   TERRAFORM_LOCAL_PATH,
+  TERRAFORM_SECRET_NAME,
+  TERRAFORM_SECRET_NAMESPACE,
 } from './consts';
 
 import {Entity} from '@backstage/catalog-model';
 
 export const isTerraformAvailable = (entity: Entity) =>
-((Boolean(entity.metadata.annotations?.[TERRAFORM_S3_BUCKET]) &&
-  Boolean(entity.metadata.annotations?.[TERRAFORM_S3_PREFIX])) ||
-  Boolean(entity.metadata.annotations?.[TERRAFORM_LOCAL_PATH])
-);
+  ((Boolean(entity.metadata.annotations?.[TERRAFORM_S3_BUCKET]) &&
+    Boolean(entity.metadata.annotations?.[TERRAFORM_S3_PREFIX])) ||
+    Boolean(entity.metadata.annotations?.[TERRAFORM_LOCAL_PATH]) ||
+   (Boolean(entity.metadata.annotations?.[TERRAFORM_SECRET_NAME]) &&
+    Boolean(entity.metadata.annotations?.[TERRAFORM_SECRET_NAMESPACE]))
+  );
 
 export const terraformPlugin = createPlugin({
-  id: 'terraformPlugin',
+  id: 'terraform',
   routes: {
     root: rootRouteRef,
   },
+  apis: [
+    createApiFactory({
+      api: TerraformApiRef,
+      deps: {
+        kubernetesApi: kubernetesApiRef,
+      },
+      factory: ({kubernetesApi}) =>
+        new Terraform(kubernetesApi),
+    }),
+  ],
 });
 
 export const TerraformPluginPage = terraformPlugin.provide(

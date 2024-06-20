@@ -1,11 +1,11 @@
-import * as fs from 'fs';
-import {errorHandler} from '@backstage/backend-common';
+import { errorHandler } from '@backstage/backend-common';
+import { coreServices } from '@backstage/backend-plugin-api';
 import express from 'express';
 import Router from 'express-promise-router';
-import {Logger} from 'winston';
-import {Config} from '@backstage/config';
 import {DefaultAwsCredentialsManager} from '@backstage/integration-aws-node';
 import {S3Client, ListObjectsV2Command, GetObjectCommand} from "@aws-sdk/client-s3";
+import * as fs from 'fs';
+const {inflate} = require('pako'); 
 
 type ListObjectsInput = {
   Bucket: string,
@@ -14,8 +14,8 @@ type ListObjectsInput = {
 };
 
 export interface RouterOptions {
-  logger: Logger;
-  config: Config;
+  logger: coreServices.logger;
+  config: coreServices.rootConfig,
 }
 
 export async function createRouter(
@@ -33,7 +33,25 @@ export async function createRouter(
 
   router.get('/health', (_, response) => {
     logger.info('PONG!');
-    response.json({status: 'ok'});
+    response.json({ status: 'ok' });
+  });
+
+  router.post('/deflate', async (req, res) => {
+    let jsonData:any = {};
+
+    if(req.body.tfState) {
+      var bytes = [];
+      const inputString = atob(req.body.tfState);
+      for (var i = 0; i < inputString.length; i++) {
+          var abyte = inputString.charCodeAt(i) & 0xff;
+          bytes.push(abyte);
+      }
+      const binData = new Uint8Array(bytes);
+      const inflated = inflate(binData,{to:'string'});
+      jsonData = JSON.parse(inflated);
+    }
+
+    res.json(jsonData);
   });
 
   router.post('/getFileList', async (req, res) => {
@@ -89,6 +107,7 @@ export async function createRouter(
       const commandResponse = await client.send(command);
       const str: any = await commandResponse.Body?.transformToString();
       res.json(JSON.parse(str));
+
     } else {
       let jsonData: any = {};
       try {

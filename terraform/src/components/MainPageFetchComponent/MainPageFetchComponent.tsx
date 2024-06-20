@@ -21,7 +21,10 @@ import {
   TERRAFORM_S3_BUCKET,
   TERRAFORM_S3_PREFIX,
   TERRAFORM_LOCAL_PATH,
+  TERRAFORM_SECRET_NAME,
+  TERRAFORM_SECRET_NAMESPACE,
 } from '../../consts'
+import { TerraformApiRef } from '../../api';
 
 export const OutputTable = ({ outputs }:any) => {
   let data:any = {};
@@ -31,7 +34,7 @@ export const OutputTable = ({ outputs }:any) => {
 
   return (
     <>
-      <InfoCard title="Outputs">
+      <InfoCard title="Terraform Outputs">
         <StructuredMetadataTable
           metadata={data}
         />
@@ -67,7 +70,7 @@ export const ResourceTable = ({ resources,setResourceDetail }:{resources:any, se
   return (
     <>
       <Table
-        title="Resources"
+        title="Terraform Resources"
         options={{ search: true, paging: true }}
         columns={columns}
         data={resources}
@@ -192,6 +195,7 @@ export const ResourceDetailComponent = ({resourceDetail,allResources,setResource
 
 export const MainPageFetchComponent = () => {
   const config = useApi(configApiRef);
+  const apiClient = useApi(TerraformApiRef);
   const { entity } = useEntity();
   const backendUrl = config.getString('backend.baseUrl');
 
@@ -256,25 +260,31 @@ export const MainPageFetchComponent = () => {
       let outputsArr:any[] = [];
       let responseJSON:any = {};
 
-      if(Bucket) {
+      if(SecretName) {
+        responseJSON = await apiClient.getSecret(undefined, SecretNamespace, SecretName);
+      } else if(Bucket) {
         responseJSON = await s3GetFileList(Bucket,Prefix);
       } else if(FileLocation) {
         responseJSON = await localGetFileList(FileLocation);
-      }
+      } 
 
       for(let i in responseJSON) {
+        let tfStateJSON:any = {};
         let file = responseJSON[i];
-        if(!file.Key.endsWith("/")) {
-          const tfStateJSON:any = await getTFStateFile(Bucket,file);
-          if(tfStateJSON.outputs) {
-            for(let i in tfStateJSON.outputs) {
-              outputsArr.push(tfStateJSON.outputs[i]);
-            }
+        if(file.TFStateContents) {
+          tfStateJSON = await deflate(file.TFStateContents);
+        } else if(file.Key && !file.Key?.endsWith("/")) {
+          tfStateJSON = await getTFStateFile(Bucket,file);
+        } 
+        
+        if(tfStateJSON.outputs) {
+          for(let i in tfStateJSON.outputs) {
+            outputsArr.push(tfStateJSON.outputs[i]);
           }
-          if(tfStateJSON.resources) {
-            for(let i in tfStateJSON.resources) {
-              resourcesArr.push(tfStateJSON.resources[i]);
-            }
+        }
+        if(tfStateJSON.resources) {
+          for(let i in tfStateJSON.resources) {
+            resourcesArr.push(tfStateJSON.resources[i]);
           }
         }
       }
@@ -284,13 +294,30 @@ export const MainPageFetchComponent = () => {
       setLoading(false);
     };
 
+    const deflate = async (tfState:string) => {
+      const requestBody = {
+        tfState
+      };
+
+      const response = await fetch(backendUrl+'/api/terraformv2/deflate', {
+        method: 'post',
+        body: JSON.stringify(requestBody),
+        headers: {'Content-Type': 'application/json'}
+      });
+      if (!response.ok) {
+        setError(await ResponseError.fromResponse(response));
+      }
+      const responseJSON = await response.json();
+      return responseJSON;
+    };
+
     const s3GetFileList = async (Bucket:string,Prefix:string) => {
       const requestBody = {
         Bucket,
         Prefix
       };
 
-      const response = await fetch(backendUrl+'/api/terraform/getFileList', {
+      const response = await fetch(backendUrl+'/api/terraformv2/getFileList', {
         method: 'post',
         body: JSON.stringify(requestBody),
         headers: {'Content-Type': 'application/json'}
@@ -306,7 +333,7 @@ export const MainPageFetchComponent = () => {
       const requestBody = {
         FileLocation,
       };
-      const response = await fetch(backendUrl+'/api/terraform/getLocalFileList', {
+      const response = await fetch(backendUrl+'/api/terraformv2/getLocalFileList', {
         method: 'post',
         body: JSON.stringify(requestBody),
         headers: {'Content-Type': 'application/json'}
@@ -325,7 +352,7 @@ export const MainPageFetchComponent = () => {
       if(Bucket) {
         bodyObj.Bucket = Bucket;
       }
-      const response = await fetch(backendUrl+'/api/terraform/getTFStateFile', {
+      const response = await fetch(backendUrl+'/api/terraformv2/getTFStateFile', {
         method: 'post',
         body: JSON.stringify(bodyObj),
         headers: {'Content-Type': 'application/json'}
@@ -336,17 +363,29 @@ export const MainPageFetchComponent = () => {
     let Bucket = "";
     let Prefix = "";
     let FileLocation = "";
+    let SecretName = "";
+    let SecretNamespace = "";
 
-    if(entity.metadata.annotations?.[TERRAFORM_S3_BUCKET]) {
-      Bucket = entity.metadata.annotations?.[TERRAFORM_S3_BUCKET] || "";
+    if(entity.metadata.annotations?.[TERRAFORM_SECRET_NAME]) {
+      SecretName = entity.metadata.annotations?.[TERRAFORM_SECRET_NAME] || "";
+    }
+      
+    if(entity.metadata.annotations?.[TERRAFORM_SECRET_NAMESPACE]) {
+      SecretNamespace = entity.metadata.annotations?.[TERRAFORM_SECRET_NAMESPACE] || "";
     }
 
-    if(entity.metadata.annotations?.[TERRAFORM_S3_PREFIX]) {
-      Prefix = entity.metadata.annotations?.[TERRAFORM_S3_PREFIX] || "";
-    }
+    if(!SecretName) {
+      if(entity.metadata.annotations?.[TERRAFORM_S3_BUCKET]) {
+        Bucket = entity.metadata.annotations?.[TERRAFORM_S3_BUCKET] || "";
+      }
 
-    if(!Bucket) {
-      FileLocation = entity.metadata.annotations?.[TERRAFORM_LOCAL_PATH] || "";
+      if(entity.metadata.annotations?.[TERRAFORM_S3_PREFIX]) {
+        Prefix = entity.metadata.annotations?.[TERRAFORM_S3_PREFIX] || "";
+      }
+
+      if(!Bucket) {
+        FileLocation = entity.metadata.annotations?.[TERRAFORM_LOCAL_PATH] || "";
+      }
     }
 
     getStateFiles();
