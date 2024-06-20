@@ -1,3 +1,4 @@
+import { IdentityApi, ConfigApi } from "@backstage/core-plugin-api"
 import { KubernetesApi } from "@backstage/plugin-kubernetes";
 import { TerraformApi } from "./index";
 
@@ -6,12 +7,113 @@ const K8s_API_TIMEOUT = "timeoutSeconds";
 
 export class Terraform implements TerraformApi {
   private kubernetesApi: KubernetesApi;
+  private identityApi: IdentityApi;
+  private configApi: ConfigApi;
 
   constructor(
     kubernetesApi: KubernetesApi,
+    identityApi: IdentityApi,
+    configApi: ConfigApi,
   ) {
     this.kubernetesApi = kubernetesApi;
+    this.identityApi = identityApi;
+    this.configApi = configApi;
   }
+
+  async fetchURL(url: string, type: string, requestBody: any) {
+    const { token } = await this.identityApi.getCredentials();
+    const backendUrl = this.configApi.getString('backend.baseUrl');
+    const response = await fetch(backendUrl+""+url, {
+      method: type,
+      body: JSON.stringify(requestBody),
+      headers: {
+        'Content-Type': 'application/json', 
+        'Authorization': `Bearer ${token}`,
+      }
+    });
+    return response;
+  }
+
+  async deflate(
+    tfState:string
+  ): Promise<any> {
+    const requestBody = {
+      tfState
+    };
+
+    const response = await this.fetchURL('/api/terraformv2/deflate', 'post', requestBody);
+    
+    if (!response.ok) {
+      return Promise.reject(
+        `failed to fetch resources: ${response.status}, ${
+          response.statusText
+        }, ${await response.text()}`
+      );
+    }
+    return response.json();
+  }
+
+  async s3GetFileList(
+    Bucket:string,
+    Prefix:string
+  ):Promise<any> {
+    const requestBody = {
+      Bucket,
+      Prefix
+    };
+
+    const response = await this.fetchURL('/api/terraformv2/getFileList', 'post', requestBody);
+    if (!response.ok) {
+      return Promise.reject(
+        `failed to fetch resources: ${response.status}, ${
+          response.statusText
+        }, ${await response.text()}`
+      );
+    }
+    return response.json();
+  }
+
+  async localGetFileList(
+    FileLocation:string
+  ):Promise<any> {
+    const requestBody = {
+      FileLocation,
+    };
+
+    const response = await this.fetchURL('/api/terraformv2/getLocalFileList', 'post', requestBody);
+    if (!response.ok) {
+      return Promise.reject(
+        `failed to fetch resources: ${response.status}, ${
+          response.statusText
+        }, ${await response.text()}`
+      );
+    }
+    return response.json();
+  }
+
+  async getTFStateFile(
+    Bucket:string,
+    file:any
+  ):Promise<any> {
+    let bodyObj:any = {
+      Key: file.Key
+    };
+    if(Bucket) {
+      bodyObj.Bucket = Bucket;
+    }
+
+    const response = await this.fetchURL('/api/terraformv2/getTFStateFile', 'post', bodyObj);
+    if (!response.ok) {
+      return Promise.reject(
+        `failed to fetch resources: ${response.status}, ${
+          response.statusText
+        }, ${await response.text()}`
+      );
+    }
+    return response.json();
+  }
+
+  
 
   async getSecret(
     clusterName: string | undefined,

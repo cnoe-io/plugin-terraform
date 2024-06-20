@@ -105,31 +105,6 @@ backend.start();
 ...
 ```
 
-If you are performing local development and using guest access to test the plugin, you will need to uncomment the following Auth Policies in `plugins/terraformv2-backend/src/plugin.ts`:
-
-```typescript
-// Uncomment these Auth Policies if you are utilizing Guest access for local development.
-httpRouter.addAuthPolicy({
-  path: '/deflate',
-  allow: 'unauthenticated',
-});
-
-httpRouter.addAuthPolicy({
-  path: '/getFileList',
-  allow: 'unauthenticated',
-});
-
-httpRouter.addAuthPolicy({
-  path: '/getLocalFileList',
-  allow: 'unauthenticated',
-});
-
-httpRouter.addAuthPolicy({
-  path: '/getTFStateFile',
-  allow: 'unauthenticated',
-});
-```
-
 ### Authentication
 
 #### AWS Credentails

@@ -1,5 +1,4 @@
-import { createPlugin, createRoutableExtension, createApiFactory, } from '@backstage/core-plugin-api';
-
+import { createPlugin, createRoutableExtension, createApiFactory, identityApiRef, configApiRef } from '@backstage/core-plugin-api';
 import { rootRouteRef } from './routes';
 import {Terraform, TerraformApiRef} from "./api";
 import {kubernetesApiRef} from "@backstage/plugin-kubernetes";
@@ -32,9 +31,11 @@ export const terraformPlugin = createPlugin({
       api: TerraformApiRef,
       deps: {
         kubernetesApi: kubernetesApiRef,
+        identityApi: identityApiRef,
+        configApi: configApiRef,
       },
-      factory: ({kubernetesApi}) =>
-        new Terraform(kubernetesApi),
+      factory: ({kubernetesApi, identityApi, configApi}) =>
+        new Terraform(kubernetesApi, identityApi, configApi),
     }),
   ],
 });

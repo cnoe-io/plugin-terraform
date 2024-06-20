@@ -10,12 +10,11 @@ import {
   DependencyGraph,
   DependencyGraphTypes,
 } from '@backstage/core-components';
-import { useApi, configApiRef } from '@backstage/core-plugin-api';
+import { useApi } from '@backstage/core-plugin-api';
 import { useEntity } from '@backstage/plugin-catalog-react';
 import { Grid } from '@material-ui/core';
 import Drawer from '@material-ui/core/Drawer';
 
-import fetch from 'node-fetch';
 import { ResponseError } from '@backstage/errors';
 import {
   TERRAFORM_S3_BUCKET,
@@ -194,10 +193,8 @@ export const ResourceDetailComponent = ({resourceDetail,allResources,setResource
 }
 
 export const MainPageFetchComponent = () => {
-  const config = useApi(configApiRef);
   const apiClient = useApi(TerraformApiRef);
   const { entity } = useEntity();
-  const backendUrl = config.getString('backend.baseUrl');
 
   const [resourceDetail,setResourceDetail] = useState<any>({});
   const [allResources,setAllResources] = useState<any>({});
@@ -263,18 +260,18 @@ export const MainPageFetchComponent = () => {
       if(SecretName) {
         responseJSON = await apiClient.getSecret(undefined, SecretNamespace, SecretName);
       } else if(Bucket) {
-        responseJSON = await s3GetFileList(Bucket,Prefix);
+        responseJSON = await apiClient.s3GetFileList(Bucket,Prefix);
       } else if(FileLocation) {
-        responseJSON = await localGetFileList(FileLocation);
+        responseJSON = await apiClient.localGetFileList(FileLocation);
       } 
 
       for(let i in responseJSON) {
         let tfStateJSON:any = {};
         let file = responseJSON[i];
         if(file.TFStateContents) {
-          tfStateJSON = await deflate(file.TFStateContents);
+          tfStateJSON = await apiClient.deflate(file.TFStateContents);
         } else if(file.Key && !file.Key?.endsWith("/")) {
-          tfStateJSON = await getTFStateFile(Bucket,file);
+          tfStateJSON = await apiClient.getTFStateFile(Bucket,file);
         } 
         
         if(tfStateJSON.outputs) {
@@ -292,72 +289,6 @@ export const MainPageFetchComponent = () => {
       parseResources(resourcesArr);
       setOutputs(outputsArr);
       setLoading(false);
-    };
-
-    const deflate = async (tfState:string) => {
-      const requestBody = {
-        tfState
-      };
-
-      const response = await fetch(backendUrl+'/api/terraformv2/deflate', {
-        method: 'post',
-        body: JSON.stringify(requestBody),
-        headers: {'Content-Type': 'application/json'}
-      });
-      if (!response.ok) {
-        setError(await ResponseError.fromResponse(response));
-      }
-      const responseJSON = await response.json();
-      return responseJSON;
-    };
-
-    const s3GetFileList = async (Bucket:string,Prefix:string) => {
-      const requestBody = {
-        Bucket,
-        Prefix
-      };
-
-      const response = await fetch(backendUrl+'/api/terraformv2/getFileList', {
-        method: 'post',
-        body: JSON.stringify(requestBody),
-        headers: {'Content-Type': 'application/json'}
-      });
-      if (!response.ok) {
-        setError(await ResponseError.fromResponse(response));
-      }
-      const responseJSON = await response.json();
-      return responseJSON;
-    };
-
-    const localGetFileList = async (FileLocation:string) => {
-      const requestBody = {
-        FileLocation,
-      };
-      const response = await fetch(backendUrl+'/api/terraformv2/getLocalFileList', {
-        method: 'post',
-        body: JSON.stringify(requestBody),
-        headers: {'Content-Type': 'application/json'}
-      });
-      if (!response.ok) {
-        setError(await ResponseError.fromResponse(response));
-      }
-      const responseJSON = await response.json();
-      return responseJSON;
-    };
-
-    const getTFStateFile = async (Bucket:string,file:any) => {
-      let bodyObj:any = {
-        Key: file.Key
-      };
-      if(Bucket) {
-        bodyObj.Bucket = Bucket;
-      }
-      const response = await fetch(backendUrl+'/api/terraformv2/getTFStateFile', {
-        method: 'post',
-        body: JSON.stringify(bodyObj),
-        headers: {'Content-Type': 'application/json'}
-      });
-      return await response.json();
     };
 
     let Bucket = "";
