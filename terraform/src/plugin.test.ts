@@ -1,6 +1,6 @@
 import { terraformPlugin } from './plugin';
 
-describe('testplugin', () => {
+describe('terraform', () => {
   it('should export plugin', () => {
     expect(terraformPlugin).toBeDefined();
   });

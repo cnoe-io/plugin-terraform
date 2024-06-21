@@ -1,11 +1,11 @@
 # Terraform Backstage Plugin
 
-Welcome to the Terraform plugin!
+Welcome to the Terraform plugin! This plugin can show Terraform outputs/resources from TFState files associated with a particular Backstage components. It does this by utilizing various annotations which point to where the TFState might be stored. It will then fetch those files, parse them, and display them in a Backstage component. 
 
 ## Getting started
 
 ### Terraform State Files
-This plugin supports two storage locations for Terraform state files (tfstate): S3 and local file systems. S3 will require additional configuration for AWS credentials to access S3. To access local file systems, the terraform backend will need proper file permissions to access those files.
+This plugin supports three storage locations for Terraform state files (tfstate): K8s secrets, S3 and local file systems. S3 will require additional configuration for AWS credentials to access S3. To access local file systems, the terraform backend will need proper file permissions to access those files.
 
 ### Configuration - Frontend
 
@@ -23,6 +23,8 @@ metadata:
     terraform.cnoe.io/s3-bucket: backstage-terraform-plugin
     terraform.cnoe.io/s3-prefix: tfstates/
     terraform.cnoe.io/local-filepath: /var/lib/tfstatefiles
+    terraform.cnoe.io/secret-name: secret
+    terraform.cnoe.io/secret-namespace: namespace
 spec:
   type: service
   lifecycle: experimental
@@ -30,7 +32,9 @@ spec:
   system: system1
 ```
 
-Update your Entity page. For example: 
+Update your Entity page. 
+
+For example if you have want to have a Terraform link in the top toolbar to expand to a new page: 
 ```typescript
 // in packages/app/src/components/catalog/EntityPage.tsx
 import { isTerraformAvailable, TerraformPluginPage } from '@cnoe-io/plugin-terraform';
@@ -50,54 +54,56 @@ const websiteEntityPage = (
 );
 ```
 
+If you want to have the Terraform outputs/resources tables on the overview Entity page:
+```typescript
+// in packages/app/src/components/catalog/EntityPage.tsx
+const overviewContent = (
+  <Grid container spacing={3} alignItems="stretch">
+    ...
+    <EntitySwitch>
+      <EntitySwitch.Case if={e => isTerraformAvailable(e)}>
+        <Grid item md={6}>
+          <TerraformPluginPage />
+        </Grid>
+      </EntitySwitch.Case>
+    </EntitySwitch>
+  ...
+  </Grid>
+);
+```
+
 #### Annotations
 As shown in the example above, the following annotations could go under
 `annotations` in the backstage `Component` and will be recognized by this plugin.
 
-- One of the two annotations below are required:
-- `terraform.cnoe.io/s3-bucket`: Required. The S3 bucket where tfstate files would be stored.
-- `terraform.cnoe.io/local-filepath`: Required. The local file system path of where tfstate files would be stored.
+- One of the three annotations below are required:
+- `terraform.cnoe.io/s3-bucket`: Optional. The S3 bucket where tfstate files would be stored.
+- `terraform.cnoe.io/local-filepath`: Optional. The local file system path of where tfstate files would be stored.
 - If storing tfstate files in S3, you can optionally define a prefix:
 - `terraform.cnoe.io/s3-prefix`: Optional. This is a S3 prefix of where tfstate files would be stored in the S3 bucket.
+- `terraform.cnoe.io/secret-name`: Optional. The secret name where the tfstate file would be stored in the K8s cluster.
+- `terraform.cnoe.io/secret-namespace`: Optional. The namespace of the secret.
 
-Note: The plugin only supports using one storage location at a time. If you define an S3 storage location and a local file system, the plugin will only use the S3 storage location.
+Note: The plugin only supports using one storage location at a time. It looks at the following annotations in this order:
+
+- secret-name/secret-namespace
+- s3-bucket/s3-prefix
+- local-filepath
 
 ### Configuration - Backend
 
-Create a new file at `packages/backend/src/plugins/terraform.ts` with the following contents.
+In `packages/backend/src/index.ts`, import the backend plugin.
 
 ```typescript
-import { Router } from 'express';
-import { PluginEnvironment } from '../types';
-import { createRouter } from '@cnoe-io/plugin-terraform-backend';
-
-export default async function createPlugin(
-  env: PluginEnvironment,
-): Promise<Router> {
-  return await createRouter({
-    logger: env.logger,
-    config: env.config,
-  });
-}
-
-```
-
-In `packages/backend/src/index.ts`, import the function created above and create an endpoint for the backend.
-
-```typescript
-import ...
-import terraform from './plugins/terraform';
-
 ...
-const appEnv = useHotMemoize(module, () => createEnv('app'));
-const terraformEnv = useHotMemoize(module, () => createEnv('terraform'));
-...
-apiRouter.use('/search', await search(searchEnv));
-apiRouter.use('/terraform', await terraform(terraformEnv));
+// cnoe plugins
+backend.add(authModuleKeycloakOIDCProvider);
+backend.add(cnoeScaffolderActions);
+backend.add(import('@internal/backstage-plugin-terraformv2-backend'));
+
+backend.start();
 ...
 ```
-
-
 
 ### Authentication
 
