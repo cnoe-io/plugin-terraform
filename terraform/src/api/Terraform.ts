@@ -120,7 +120,7 @@ export class Terraform implements TerraformApi {
     namespace: string,
     secretName: string
   ): Promise<any> {
-    const ns = namespace !== undefined ? namespace : "default";
+    const ns = namespace !== undefined ? namespace : "flux-system";
     const path = `/api/${API_VERSION}/namespaces/${ns}/secrets/${secretName}`;
     const query = new URLSearchParams({
       [K8s_API_TIMEOUT]: "30",
